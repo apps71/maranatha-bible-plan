@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: bible-telegram-bot
+    env: python
+    region: frankfurt  # Ближайший регион к Европе
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: deepseek/deepseek-chat
+      - key: GOOGLE_SHEET_ID
+        sync: false
+      - key: GOOGLE_SHEET_GID
+        value: "0"
+      - key: PYTHON_VERSION
+        value: "3.11.0"
