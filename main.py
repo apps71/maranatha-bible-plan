@@ -342,4 +342,9 @@ async def main():
 
 
 if __name__ == "__main__":
+    # Отключаем буферизацию вывода для Render
+    import sys
+    sys.stdout.reconfigure(line_buffering=True)
+    sys.stderr.reconfigure(line_buffering=True)
+    
     asyncio.run(main())
