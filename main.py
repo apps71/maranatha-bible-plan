@@ -7,6 +7,7 @@ from telegram import Bot
 from telegram.error import TelegramError
 import httpx
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from aiohttp import web
 
 # =============================================================================
 # КОНФИГУРАЦИЯ - ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ
@@ -17,6 +18,7 @@ OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 OPENROUTER_MODEL = os.getenv('OPENROUTER_MODEL', 'anthropic/claude-3.5-sonnet')  # По умолчанию Claude 3.5 Sonnet
 GOOGLE_SHEET_ID = os.getenv('GOOGLE_SHEET_ID')  # ID публичной Google таблицы
 GOOGLE_SHEET_GID = os.getenv('GOOGLE_SHEET_GID', '0')  # GID листа (по умолчанию 0)
+PORT = int(os.getenv('PORT', 10000))  # Порт для Render
 
 # Часовой пояс
 TIMEZONE = pytz.timezone('Europe/Moscow')  # UTC+3
@@ -81,6 +83,26 @@ PROMPT_TEMPLATE = """Вы — помощник редактора детской
 INPUT:
 {input_data}
 """
+
+# =============================================================================
+# ПРОСТОЙ ВЕБ-СЕРВЕР ДЛЯ RENDER
+# =============================================================================
+
+async def health_check(request):
+    """Простой endpoint для проверки работы сервиса"""
+    return web.Response(text="Bible Bot is running! ✅")
+
+async def start_web_server():
+    """Запуск веб-сервера для Render"""
+    app = web.Application()
+    app.router.add_get('/', health_check)
+    app.router.add_get('/health', health_check)
+    
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', PORT)
+    await site.start()
+    print(f"🌐 Веб-сервер запущен на порту {PORT}")
 
 # =============================================================================
 # ФУНКЦИИ
@@ -277,6 +299,9 @@ async def main():
         print("❌ Не все переменные окружения установлены!")
         print("Требуются: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, OPENROUTER_API_KEY, GOOGLE_SHEET_ID")
         return
+    
+    # Запускаем веб-сервер для Render
+    await start_web_server()
     
     # Создаём планировщик
     scheduler = AsyncIOScheduler(timezone=TIMEZONE)
