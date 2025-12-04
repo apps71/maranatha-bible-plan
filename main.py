@@ -115,23 +115,29 @@ async def load_google_sheet_data():
         # URL для экспорта Google Sheets в CSV формате
         csv_url = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv&gid={GOOGLE_SHEET_GID}"
         
-        async with httpx.AsyncClient() as client:
+        print(f"📊 Загрузка данных из Google Sheets...", flush=True)
+        
+        async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client:
             response = await client.get(csv_url)
             response.raise_for_status()
+            
+            print(f"✅ Данные загружены ({len(response.text)} символов)", flush=True)
             
             # Парсим CSV
             lines = response.text.strip().split('\n')
             
             if len(lines) < 2:
-                print("⚠️ Таблица пустая или недоступна")
+                print("⚠️ Таблица пустая или недоступна", flush=True)
                 return None
             
             # Первая строка - заголовки
-            headers = [h.strip() for h in lines[0].split(',')]
+            headers = [h.strip().strip('"') for h in lines[0].split(',')]
+            print(f"📋 Найдены колонки: {headers}", flush=True)
             
             # Ищем активную неделю
-            for line in lines[1:]:
-                # Простой парсинг CSV (работает если нет запятых внутри полей)
+            for line_num, line in enumerate(lines[1:], start=2):
+                # Простой парсинг CSV (для более сложных случаев нужен csv модуль)
+                # Но для наших данных должно работать
                 values = line.split(',')
                 
                 if len(values) < len(headers):
@@ -143,15 +149,20 @@ async def load_google_sheet_data():
                     if i < len(values):
                         row[header] = values[i].strip().strip('"')
                 
+                print(f"🔍 Строка {line_num}: status = '{row.get('status')}'", flush=True)
+                
                 # Проверяем статус
                 if row.get('status') == 'active':
+                    print(f"✅ Найдена активная неделя!", flush=True)
                     return format_week_data(row)
             
-            print("⚠️ Не найдена активная неделя в таблице")
+            print("⚠️ Не найдена активная неделя в таблице (нет строки со status='active')", flush=True)
             return None
         
     except Exception as e:
-        print(f"❌ Ошибка при чтении Google Sheets: {e}")
+        print(f"❌ Ошибка при чтении Google Sheets: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
         return None
 
 
