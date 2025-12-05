@@ -1,6 +1,8 @@
 import os
 import json
 import asyncio
+import csv
+from io import StringIO
 from datetime import datetime, time
 import pytz
 from telegram import Bot
@@ -123,37 +125,28 @@ async def load_google_sheet_data():
             
             print(f"✅ Данные загружены ({len(response.text)} символов)", flush=True)
             
-            # Парсим CSV
-            lines = response.text.strip().split('\n')
+            # Используем стандартный CSV парсер Python (правильно обрабатывает запятые внутри полей)
+            csv_reader = csv.DictReader(StringIO(response.text))
             
-            if len(lines) < 2:
-                print("⚠️ Таблица пустая или недоступна", flush=True)
-                return None
-            
-            # Первая строка - заголовки
-            headers = [h.strip().strip('"') for h in lines[0].split(',')]
-            print(f"📋 Найдены колонки: {headers}", flush=True)
+            # Получаем заголовки
+            fieldnames = csv_reader.fieldnames
+            print(f"📋 Найдены колонки: {fieldnames}", flush=True)
             
             # Ищем активную неделю
-            for line_num, line in enumerate(lines[1:], start=2):
-                # Простой парсинг CSV (для более сложных случаев нужен csv модуль)
-                # Но для наших данных должно работать
-                values = line.split(',')
-                
-                if len(values) < len(headers):
-                    continue
-                
-                # Создаём словарь из строки
-                row = {}
-                for i, header in enumerate(headers):
-                    if i < len(values):
-                        row[header] = values[i].strip().strip('"')
-                
-                print(f"🔍 Строка {line_num}: status = '{row.get('status')}'", flush=True)
+            for line_num, row in enumerate(csv_reader, start=2):
+                status = row.get('status', '').strip()
+                print(f"🔍 Строка {line_num}: status = '{status}'", flush=True)
                 
                 # Проверяем статус
-                if row.get('status') == 'active':
+                if status == 'active':
                     print(f"✅ Найдена активная неделя!", flush=True)
+                    
+                    # Выводим все поля для отладки
+                    print(f"📝 Данные строки:", flush=True)
+                    for key, value in row.items():
+                        preview = value[:50] + "..." if len(value) > 50 else value
+                        print(f"   {key}: {preview}", flush=True)
+                    
                     return format_week_data(row)
             
             print("⚠️ Не найдена активная неделя в таблице (нет строки со status='active')", flush=True)
@@ -168,23 +161,52 @@ async def load_google_sheet_data():
 
 def format_week_data(row):
     """Форматирование данных недели из строки таблицы"""
-    # Парсим JSON с данными дней (должен быть в колонке 'days_json')
-    days_data = json.loads(row.get('days_json', '[]'))
-    
-    input_data = f"""start_date: {row['start_date']}
-lesson_url: {row['lesson_url']}
-main_point: {row['main_point']}
+    try:
+        # Парсим JSON с данными дней
+        days_json_str = row.get('days_json', '').strip()
+        
+        if not days_json_str:
+            print("❌ Колонка days_json пустая", flush=True)
+            return None
+        
+        print(f"🔍 Парсинг days_json ({len(days_json_str)} символов)...", flush=True)
+        
+        try:
+            days_data = json.loads(days_json_str)
+        except json.JSONDecodeError as e:
+            print(f"❌ Невалидный JSON в days_json: {e}", flush=True)
+            print(f"📄 Первые 200 символов: {days_json_str[:200]}", flush=True)
+            return None
+        
+        if not isinstance(days_data, list):
+            print(f"❌ days_json должен быть массивом, получен: {type(days_data)}", flush=True)
+            return None
+        
+        if len(days_data) != 7:
+            print(f"⚠️ В days_json должно быть 7 элементов, получено: {len(days_data)}", flush=True)
+        
+        # Формируем INPUT для промпта
+        input_data = f"""start_date: {row.get('start_date', '')}
+lesson_url: {row.get('lesson_url', '')}
+main_point: {row.get('main_point', '')}
 days:
 """
-    
-    for day in days_data:
-        input_data += f"""
-- ref: "{day['ref']}"
-  note: "{day['note']}"
-  verse_text: "{day['verse_text']}"
+        
+        for day in days_data:
+            input_data += f"""
+- ref: "{day.get('ref', '')}"
+  note: "{day.get('note', '')}"
+  verse_text: "{day.get('verse_text', '')}"
 """
-    
-    return input_data
+        
+        print(f"✅ Данные недели успешно сформированы", flush=True)
+        return input_data
+        
+    except Exception as e:
+        print(f"❌ Ошибка форматирования данных: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return None
 
 
 async def generate_messages_with_claude(input_data):
@@ -338,7 +360,7 @@ async def main():
     print("✅ Планировщик запущен")
     
     # Опционально: запустить задачу сразу для теста
-    await daily_job()
+    # await daily_job()
     
     print("🎉 Бот полностью запущен и работает!")
     
