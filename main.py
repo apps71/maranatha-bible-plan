@@ -1,3 +1,89 @@
+async def test_bible_api():
+    """Тестовая функция для проверки API"""
+    BIBLE_API_KEY = os.getenv('BIBLE_API_KEY')
+    
+    # Тест 1: Получить список переводов
+    print("\n" + "="*80)
+    print("🧪 ТЕСТ 1: Получение списка переводов")
+    print("="*80)
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # Получаем все переводы
+            response = await client.get(
+                "https://api.scripture.api.bible/v1/bibles",
+                headers={"api-key": BIBLE_API_KEY},
+                params={"language": "rus"}
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                bibles = data.get('data', [])
+                
+                print(f"✅ Найдено русских переводов: {len(bibles)}\n")
+                
+                for bible in bibles:
+                    print(f"📖 {bible['name']}")
+                    print(f"   ID: {bible['id']}")
+                    print(f"   Язык: {bible['language']['name']}")
+                    print("-" * 80)
+            else:
+                print(f"❌ Ошибка: {response.status_code}")
+                print(response.text)
+    except Exception as e:
+        print(f"❌ Ошибка: {e}")
+    
+    # Тест 2: Проверка конкретного ID
+    print("\n" + "="*80)
+    print("🧪 ТЕСТ 2: Проверка ID de4e12af7f28f599-02")
+    print("="*80)
+    
+    test_ids = [
+        "de4e12af7f28f599-02",
+        "de4e12af7f28f599-01",
+        "685d1470fe4d5c3b-01"
+    ]
+    
+    for bible_id in test_ids:
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(
+                    f"https://api.scripture.api.bible/v1/bibles/{bible_id}/verses/GEN.1.1",
+                    headers={"api-key": BIBLE_API_KEY},
+                    params={"content-type": "text"}
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    text = data['data']['content']
+                    print(f"✅ {bible_id} работает!")
+                    print(f"   Бытие 1:1: {text[:100]}...")
+                else:
+                    print(f"❌ {bible_id} не работает: {response.status_code}")
+                    
+        except Exception as e:
+            print(f"❌ {bible_id} ошибка: {e}")
+        
+        print("-" * 80)
+
+# В функции main() добавьте перед основным кодом:
+async def main():
+    print("🚀 Запуск Bible Telegram Bot")
+    
+    # ВРЕМЕННО: Тест API
+    await test_bible_api()
+    return  # Закомментируйте эту строку после теста
+    
+    # ... остальной код
+
+
+
+
+
+
+
+
+
 import os
 import json
 import asyncio
