@@ -223,28 +223,47 @@ def get_verse_from_db(ref):
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
-        # Запрос к БД (структура может отличаться, нужно проверить)
-        # Типичная структура: book, chapter, verse, text
-        query = """
-            SELECT verse, text FROM bible 
-            WHERE book = ? AND chapter = ? AND verse BETWEEN ? AND ?
-            ORDER BY verse
-        """
+        # ОТЛАДКА: Смотрим структуру БД
+        print(f"🔍 Отладка БД для {ref}:", flush=True)
         
-        cursor.execute(query, (book_abbr, chapter, verse_start, verse_end))
-        results = cursor.fetchall()
+        # Получаем список таблиц
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+        print(f"   Таблицы в БД: {[t[0] for t in tables]}", flush=True)
+        
+        # Смотрим структуру первой таблицы
+        if tables:
+            table_name = tables[0][0]
+            cursor.execute(f"PRAGMA table_info({table_name});")
+            columns = cursor.fetchall()
+            print(f"   Колонки в таблице '{table_name}': {[c[1] for c in columns]}", flush=True)
+            
+            # Пробуем найти стих разными способами
+            print(f"   Ищем: book={book_abbr}, chapter={chapter}, verse={verse_start}", flush=True)
+            
+            # Вариант 1: стандартная структура
+            try:
+                query1 = f"SELECT * FROM {table_name} WHERE book = ? AND chapter = ? AND verse = ? LIMIT 1"
+                cursor.execute(query1, (book_abbr, chapter, verse_start))
+                result1 = cursor.fetchone()
+                if result1:
+                    print(f"   ✅ Найдено через вариант 1: {result1}", flush=True)
+            except Exception as e:
+                print(f"   ⚠️ Вариант 1 не сработал: {e}", flush=True)
+            
+            # Вариант 2: может быть другие названия колонок
+            try:
+                query2 = f"SELECT * FROM {table_name} LIMIT 5"
+                cursor.execute(query2)
+                sample = cursor.fetchall()
+                print(f"   📊 Первые 5 записей таблицы:", flush=True)
+                for row in sample[:3]:
+                    print(f"      {row}", flush=True)
+            except Exception as e:
+                print(f"   ⚠️ Не удалось получить примеры: {e}", flush=True)
         
         conn.close()
-        
-        if not results:
-            print(f"⚠️ Стих не найден в БД: {ref}", flush=True)
-            return None
-        
-        # Объединяем стихи
-        verse_text = ' '.join([row[1] for row in results])
-        
-        print(f"✅ Найден стих: {ref} ({len(verse_text)} символов)", flush=True)
-        return verse_text
+        return None  # Временно возвращаем None для отладки
         
     except Exception as e:
         print(f"❌ Ошибка чтения из БД для '{ref}': {e}", flush=True)
@@ -485,8 +504,8 @@ async def main():
     print("✅ Планировщик запущен", flush=True)
     
     # Тестовая отправка (раскомментируйте для теста)
-    print("\n🧪 Запуск тестовой отправки...", flush=True)
-    await daily_job()
+    # print("\n🧪 Запуск тестовой отправки...", flush=True)
+    # await daily_job()
     
     print("\n🎉 Бот полностью запущен и работает!", flush=True)
     print("="*50, flush=True)
