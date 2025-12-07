@@ -35,16 +35,16 @@ MESSAGE_TEMPLATE = """🧸 Детям от 0 до 3 лет
 
 {date_formatted}
 
-**{ref}**
+<b>{ref}</b>
 
 ❤️ {verse_text}
 ({note})
 
-**Основная мысль урока** (можно подчеркнуть при рассуждении над текстом Библии):
+<b>Основная мысль урока</b> (можно подчеркнуть при рассуждении над текстом Библии):
 
 ✅ {main_point}
 
-**Прочитать текст урока:**
+<b>Прочитать текст урока:</b>
 {lesson_url}"""
 
 async def health_check(request):
@@ -152,7 +152,7 @@ def generate_messages_from_data(week_data):
 async def send_telegram_message(message_text):
     try:
         bot = Bot(token=TELEGRAM_BOT_TOKEN)
-        await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message_text, parse_mode='Markdown')
+        await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message_text, parse_mode='HTML')
         print(f"✅ Сообщение отправлено", flush=True)
     except TelegramError as e:
         print(f"❌ Ошибка Telegram: {e}", flush=True)
@@ -180,8 +180,8 @@ async def main():
     scheduler.add_job(daily_job, 'cron', hour=4, minute=10)
     scheduler.start()
     print("✅ Планировщик запущен", flush=True)
-    print("\n🧪 Тест...", flush=True)
-    await daily_job()
+     print("\n🧪 Тест...", flush=True)
+     await daily_job()
     print("\n🎉 Бот работает!", flush=True)
     try:
         while True:
