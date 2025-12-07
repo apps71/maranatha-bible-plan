@@ -177,11 +177,11 @@ async def main():
     runner = await start_web_server()
     await asyncio.sleep(3)
     scheduler = AsyncIOScheduler(timezone=TIMEZONE)
-    scheduler.add_job(daily_job, 'cron', hour=4, minute=10)
+    scheduler.add_job(daily_job, 'cron', hour=5, minute=15)
     scheduler.start()
     print("✅ Планировщик запущен", flush=True)
-    print("\n🧪 Тест...", flush=True)
-    await daily_job()
+    #print("\n🧪 Тест...", flush=True)
+    #await daily_job()
     print("\n🎉 Бот работает!", flush=True)
     try:
         while True:
