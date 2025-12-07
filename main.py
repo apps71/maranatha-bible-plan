@@ -180,17 +180,6 @@ async def send_telegram_message(message_text):
     except TelegramError as e:
         print(f"❌ Ошибка Telegram: {e}", flush=True)
 
-async def keep_alive():
-    """Самопинг каждые 5 минут, чтобы Render не усыплял сервис"""
-    while True:
-        await asyncio.sleep(300)  # 5 минут
-        try:
-            async with httpx.AsyncClient() as client:
-                await client.get(f"http://localhost:{PORT}/health")
-                print("💓 Keep-alive пинг", flush=True)
-        except:
-            pass  # Игнорируем ошибки
-
 async def daily_job():
     print(f"\n🔄 Запуск задачи", flush=True)
     week_data = await load_google_sheet_data()
@@ -211,14 +200,10 @@ async def main():
     runner = await start_web_server()
     await asyncio.sleep(3)
     scheduler = AsyncIOScheduler(timezone=TIMEZONE)
-    scheduler.add_job(daily_job, 'cron', hour=1, minute=30)
+    scheduler.add_job(daily_job, 'cron', hour=2, minute=00)
     scheduler.start()
     print("✅ Планировщик запущен", flush=True)
-    
-    # Запускаем keep-alive в фоне
-    asyncio.create_task(keep_alive())
-    print("✅ Keep-alive запущен", flush=True)
-    
+          
     #print("\n🧪 Тест...", flush=True)
     #await daily_job()
     
