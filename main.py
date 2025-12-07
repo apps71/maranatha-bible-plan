@@ -169,7 +169,7 @@ def parse_bible_ref(ref):
         ref = ref.strip()
         
         # Паттерн: "Книга глава:стих" или "Книга глава:стих-стих"
-        match = re.match(r'^(.+?)\s+(\d+):(\d+)(?:-(\d+))?
+        match = re.match(r'^(.+?)\s+(\d+):(\d+)(?:-(\d+))?$', ref)
 
 
 def get_verse_from_db(ref):
