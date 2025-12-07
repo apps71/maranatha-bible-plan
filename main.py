@@ -160,17 +160,27 @@ async def start_web_server():
 # =============================================================================
 
 def parse_bible_ref(ref):
-    """
-    Парсинг ссылки на стих Библии
-    Примеры: "Исход 3:4", "1 Коринфянам 13:4-7", "Псалом 118:30"
-    Возвращает: (book_number, chapter, verse_start, verse_end)
-    """
-    try:
-        ref = ref.strip()
-        
-        # Паттерн: "Книга глава:стих" или "Книга глава:стих-стих"
-        match = re.match(r'^(.+?)\s+(\d+):(\d+)(?:-(\d+))?$', ref)
-
+    """Парсинг ссылки на стих Библии"""
+    ref = ref.strip()
+    match = re.match(r'^(.+?)\s+(\d+):(\d+)(?:-(\d+))?$', ref)
+    if not match:
+        print(f"⚠️ Не удалось распарсить ссылку: {ref}", flush=True)
+        return None
+    book_name = match.group(1).strip().lower()
+    chapter = int(match.group(2))
+    verse_start = int(match.group(3))
+    verse_end = int(match.group(4)) if match.group(4) else verse_start
+    book_number = BOOK_NUMBERS.get(book_name)
+    if not book_number:
+        print(f"⚠️ Неизвестная книга: {book_name}", flush=True)
+        for key, value in BOOK_NUMBERS.items():
+            if book_name in key or key in book_name:
+                book_number = value
+                print(f"✅ Найдено частичное совпадение: {book_name} → {book_number}", flush=True)
+                break
+    if not book_number:
+        return None
+    return (book_number, chapter, verse_start, verse_end)
 
 def get_verse_from_db(ref):
     """
