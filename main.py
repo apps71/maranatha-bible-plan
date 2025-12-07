@@ -181,9 +181,9 @@ async def send_telegram_message(message_text):
         print(f"❌ Ошибка Telegram: {e}", flush=True)
 
 async def keep_alive():
-    """Самопинг каждые 10 минут, чтобы Render не усыплял сервис"""
+    """Самопинг каждые 5 минут, чтобы Render не усыплял сервис"""
     while True:
-        await asyncio.sleep(60)  # 10 минут
+        await asyncio.sleep(300)  # 5 минут
         try:
             async with httpx.AsyncClient() as client:
                 await client.get(f"http://localhost:{PORT}/health")
