@@ -106,16 +106,39 @@ def get_verse_from_db(ref):
 async def load_google_sheet_data():
     try:
         csv_url = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv&gid={GOOGLE_SHEET_GID}"
-        print(f"📊 Загрузка данных...", flush=True)
+        print(f"📊 Загрузка данных из Google Sheets...", flush=True)
+        
         async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client:
             response = await client.get(csv_url)
             response.raise_for_status()
             csv_reader = csv.DictReader(StringIO(response.text))
-            for row in csv_reader:
-                if row.get('status', '').strip() == 'active':
-                    print(f"✅ Найдена активная неделя", flush=True)
-                    return parse_week_data(row)
-        return None
+            today = datetime.now(TIMEZONE).date()
+            print(f"📅 Сегодня: {today.strftime('%d.%m.%Y')}", flush=True)
+            
+            for row_num, row in enumerate(csv_reader, start=2):
+                start_date_str = row.get('start_date', '').strip()
+                if not start_date_str:
+                    continue
+                try:
+                    start_date = datetime.strptime(start_date_str, '%d.%m.%Y').date()
+                    end_date = start_date + timedelta(days=6)
+                    print(f"🔍 Строка {row_num}: {start_date_str} - {end_date.strftime('%d.%m.%Y')}", flush=True)
+                    if start_date <= today <= end_date:
+                        print(f"✅ Найдена подходящая неделя: {start_date_str} - {end_date.strftime('%d.%m.%Y')}", flush=True)
+                        return parse_week_data(row)
+                except ValueError:
+                    continue
+            
+            print("⚠️ Не найдена неделя для текущей даты, ищу status=active...", flush=True)
+            async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client2:
+                response2 = await client2.get(csv_url)
+                csv_reader2 = csv.DictReader(StringIO(response2.text))
+                for row in csv_reader2:
+                    if row.get('status', '').strip() == 'active':
+                        print(f"✅ Найдена строка со status=active", flush=True)
+                        return parse_week_data(row)
+            
+            return None
     except Exception as e:
         print(f"❌ Ошибка чтения таблицы: {e}", flush=True)
         return None
@@ -180,8 +203,8 @@ async def main():
     scheduler.add_job(daily_job, 'cron', hour=14, minute=10)
     scheduler.start()
     print("✅ Планировщик запущен", flush=True)
-    #print("\n🧪 Тест...", flush=True)
-    #await daily_job()
+    print("\n🧪 Тест...", flush=True)
+    await daily_job()
     print("\n🎉 Бот работает!", flush=True)
     try:
         while True:
