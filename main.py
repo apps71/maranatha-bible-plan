@@ -475,7 +475,6 @@ if __name__ == "__main__":
     sys.stderr.reconfigure(line_buffering=True)
     
     asyncio.run(main())
-, ref)
         
         if not match:
             print(f"⚠️ Не удалось распарсить ссылку: {ref}", flush=True)
