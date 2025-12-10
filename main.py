@@ -91,7 +91,7 @@ MESSAGE_TEMPLATE_COMBINED = """<i>{date_formatted}</i>
 {ref_0_3}
 
 ❤️ {verse_text_0_3}
-({note_0_3})
+<i>{note_0_3}</i>
 
 <b>Основная мысль урока</b> (можно подчеркнуть при рассуждении над текстом Библии):
 
@@ -292,7 +292,7 @@ def generate_messages_from_data(week_data):
         for day_index in range(7):
             # Вычисляем дату
             current_date = start_date + timedelta(days=day_index)
-            date_formatted = f"{current_date.strftime('%d.%m.%Y')} - {weekdays_ru[day_index]}"
+            date_formatted = f"{current_date.strftime('%d.%m.%Y')} – {weekdays_ru[day_index]}"
             
             # Получаем данные дня для 0-3 лет
             day_data_0_3 = days_data_0_3[day_index]
