@@ -448,20 +448,20 @@ async def main():
     # Создаём планировщик
     scheduler = AsyncIOScheduler(timezone=TIMEZONE)
     
-    # Добавляем ежедневную задачу в 04:10
+    # Добавляем ежедневную задачу в 04:00
     scheduler.add_job(
         daily_job,
         trigger='cron',
         hour=4,
-        minute=10,
+        minute=00,
         id='daily_bible_message'
     )
     
     scheduler.start()
-    print(f"✅ Планировщик запущен. Задача будет выполняться каждый день в 04:10 UTC+3", flush=True)
+    print(f"✅ Планировщик запущен. Задача будет выполняться каждый день в 04:00 UTC+3", flush=True)
     
     # Опционально: запустить задачу сразу для теста
-    await daily_job()
+    #await daily_job()
     
     print("\n" + "="*50, flush=True)
     print("✅ Бот полностью запущен и работает!", flush=True)
