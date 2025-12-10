@@ -181,8 +181,8 @@ async def load_google_sheet_data():
     csv_url = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv&gid={GOOGLE_SHEET_GID}"
     
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(csv_url)
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            response = await client.get(csv_url, timeout=60.0)
             response.raise_for_status()
             
             # Парсим CSV
