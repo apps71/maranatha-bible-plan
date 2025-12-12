@@ -461,7 +461,7 @@ async def main():
     print(f"✅ Планировщик запущен. Задача будет выполняться каждый день в 04:00 UTC+3", flush=True)
     
     # Опционально: запустить задачу сразу для теста
-    #await daily_job()
+    await daily_job()
     
     print("\n" + "="*50, flush=True)
     print("✅ Бот полностью запущен и работает!", flush=True)
